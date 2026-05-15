@@ -34,7 +34,7 @@ export const ProfileScreen = () => {
 
   const handleLogout = () => {
     if (Platform.OS === 'web') {
-      // En la web los modales a veces son bloqueados por el navegador o iframes
+      
       logout();
     } else {
       Alert.alert(
@@ -118,7 +118,7 @@ export const ProfileScreen = () => {
             )}
           </GlassCard>
 
-          {/* Sección Tu Impacto movida abajo */}
+          {}
           <GlassCard style={styles.impactCard}>
             <Text style={styles.sectionTitle}>Tu Impacto</Text>
             <View style={styles.impactRow}>

@@ -16,7 +16,7 @@ export const MainNavigator = () => {
         tabBarStyle: {
           backgroundColor: '#0a1612',
           borderTopColor: 'rgba(167, 243, 208, 0.1)',
-          // Quitamos alturas y paddings estáticos para que React Navigation lo calcule automáticamente
+          
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,
           minHeight: Platform.OS === 'ios' ? 88 : 65,
         },

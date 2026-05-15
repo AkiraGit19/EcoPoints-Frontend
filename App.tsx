@@ -29,7 +29,7 @@ export default function App() {
     </SafeAreaProvider>
   );
 
-  // Si estamos en la web, envolvemos la app en un "marco" de celular centrado
+  
   if (Platform.OS === 'web') {
     return (
       <View style={styles.webWrapper}>
@@ -46,13 +46,13 @@ export default function App() {
 const styles = StyleSheet.create({
   webWrapper: {
     flex: 1,
-    backgroundColor: '#050A08', // Fondo oscuro para el resto de la pantalla web
+    backgroundColor: '#050A08', 
     justifyContent: 'center',
     alignItems: 'center',
   },
   mobileFrame: {
-    width: 390, // Ancho típico de un iPhone
-    height: 844, // Alto típico de un iPhone
+    width: 390, 
+    height: 844, 
     borderRadius: 40,
     overflow: 'hidden',
     shadowColor: '#10B981',

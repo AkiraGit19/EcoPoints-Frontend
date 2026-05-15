@@ -33,7 +33,7 @@ export const RetosScreen = () => {
     try {
       const mensaje = await unirseReto(id);
       Alert.alert('¡Éxito!', mensaje);
-      // Aquí se podría actualizar el estado local para marcar el reto como "Unido"
+      
     } catch (error) {
       Alert.alert('Error', 'No se pudo unir al reto.');
     } finally {
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   puntosBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(163, 230, 53, 0.2)', // Accent transparent
+    backgroundColor: 'rgba(163, 230, 53, 0.2)', 
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,

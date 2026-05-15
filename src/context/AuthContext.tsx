@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Cargar token almacenado al iniciar la app
+    
     const loadStorageData = async () => {
       try {
         const storedToken = await AsyncStorage.getItem('userToken');
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProfile = async (nombre: string) => {
     if (!user) return;
-    // Eliminado setIsLoading(true) para no causar un re-render global que reinicie el AppNavigator
+    
     try {
       const response = await api.patch(`/usuarios/${user.id}`, { nombre });
       const updatedUser = response.data.usuario;
