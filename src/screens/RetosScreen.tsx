@@ -2,47 +2,60 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Leaf, Award, Calendar } from 'lucide-react-native';
-import { getRetos, unirseReto, Reto } from '../services/retoService';
+import { getRetos, unirseReto, getMisRetos, Reto, UsuarioReto } from '../services/retoService';
 import { GlassCard } from '../components/ui/GlassCard';
 import { typography } from '../theme/typography';
 import { colors } from '../theme/colors';
-
+import { useNavigation } from '@react-navigation/native';
 export const RetosScreen = () => {
+
+
+
+  const navigation = useNavigation<any>();
   const [retos, setRetos] = useState<Reto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState<string | null>(null);
+  const [misRetos, setMisRetos] = useState<UsuarioReto[]>([]);
 
   useEffect(() => {
     cargarRetos();
   }, []);
 
-  const cargarRetos = async () => {
-    try {
-      const data = await getRetos();
-      setRetos(data);
-    } catch (error) {
-      console.error('Error al cargar retos:', error);
-      Alert.alert('Error', 'No se pudieron cargar los retos.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+ const cargarRetos = async () => {
+  try {
+    const retosData = await getRetos();
+    const misRetosData = await getMisRetos();
+
+    setRetos(retosData);
+    setMisRetos(misRetosData);
+  } catch (error) {
+    console.error('Error al cargar retos:', error);
+    Alert.alert('Error', 'No se pudieron cargar los retos.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleUnirse = async (id: string) => {
-    setIsJoining(id);
-    try {
-      const mensaje = await unirseReto(id);
-      Alert.alert('¡Éxito!', mensaje);
-      // Aquí se podría actualizar el estado local para marcar el reto como "Unido"
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo unir al reto.');
-    } finally {
-      setIsJoining(null);
-    }
-  };
+  setIsJoining(id);
+  try {
+    const mensaje = await unirseReto(id);
+    Alert.alert('¡Éxito!', mensaje);
+
+    await cargarRetos();
+  } catch (error) {
+    Alert.alert('Error', 'No se pudo unir al reto.');
+  } finally {
+    setIsJoining(null);
+  }
+};
+  const retoYaIniciado = (idReto: string) => {
+  return misRetos.some((item) => item.id_reto === idReto);
+};
 
   const renderReto = ({ item }: { item: Reto }) => {
     const isThisJoining = isJoining === item.id;
+    const iniciado = retoYaIniciado(item.id);
     return (
       <GlassCard style={styles.retoCard}>
         <View style={styles.retoHeader}>
@@ -63,17 +76,26 @@ export const RetosScreen = () => {
             </Text>
           </View>
           
-          <TouchableOpacity 
-            style={styles.joinButton}
-            onPress={() => handleUnirse(item.id)}
-            disabled={isThisJoining}
-          >
-            {isThisJoining ? (
-              <ActivityIndicator size="small" color={colors.background} />
-            ) : (
-              <Text style={styles.joinButtonText}>Unirse</Text>
-            )}
-          </TouchableOpacity>
+          {iniciado ? (
+  <TouchableOpacity
+    style={styles.viewButton}
+    onPress={() => navigation.navigate('DetalleReto', { reto: item })}
+  >
+    <Text style={styles.joinButtonText}>Ver reto</Text>
+  </TouchableOpacity>
+) : (
+  <TouchableOpacity
+    style={styles.joinButton}
+    onPress={() => handleUnirse(item.id)}
+    disabled={isThisJoining}
+  >
+    {isThisJoining ? (
+      <ActivityIndicator size="small" color={colors.background} />
+    ) : (
+      <Text style={styles.joinButtonText}>Unirse</Text>
+    )}
+  </TouchableOpacity>
+)}
         </View>
       </GlassCard>
     );
@@ -191,6 +213,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
   },
+  viewButton: {
+  backgroundColor: '#2563eb',
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  borderRadius: 12,
+},
+  joinButtonDisabled: {
+  backgroundColor: colors.textMuted,
+},
   joinButtonText: {
     ...typography.button,
     color: colors.background,
