@@ -8,12 +8,38 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { typography } from '../theme/typography';
 import { colors } from '../theme/colors';
+import { useFocusEffect } from '@react-navigation/native';
+import api from '../services/api';
 
 export const ProfileScreen = () => {
-  const { user, logout, updateProfile } = useContext(AuthContext);
+  const { user, logout, updateProfile, addPoints } = useContext(AuthContext);
   const [nombre, setNombre] = useState(user?.nombre || '');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [displayPoints, setDisplayPoints] = useState(user?.puntosTotales || 0);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchLatestProfile = async () => {
+        if (!user) return;
+        try {
+          const response = await api.get(`/usuarios/${user.id}`);
+          const latestData = response.data;
+          if (latestData && latestData.puntos_totales !== undefined) {
+            setDisplayPoints(latestData.puntos_totales);
+            // Sync with context silently
+            const diff = latestData.puntos_totales - user.puntosTotales;
+            if (diff !== 0 && addPoints) {
+              await addPoints(diff);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching latest profile:', error);
+        }
+      };
+      fetchLatestProfile();
+    }, [user, addPoints])
+  );
 
   const handleUpdate = async () => {
     if (!nombre.trim()) {
@@ -72,7 +98,7 @@ export const ProfileScreen = () => {
           <GlassCard style={styles.statsCard}>
             <View style={styles.statItem}>
               <Award size={32} color={colors.accent} />
-              <Text style={styles.statValue}>{user.puntosTotales}</Text>
+              <Text style={styles.statValue}>{displayPoints}</Text>
               <Text style={styles.statLabel}>EcoPoints Totales</Text>
             </View>
           </GlassCard>
