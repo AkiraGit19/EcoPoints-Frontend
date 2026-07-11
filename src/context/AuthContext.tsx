@@ -8,6 +8,13 @@ export interface User {
   correo: string;
   rol: string;
   puntosTotales: number;
+  fotoPerfil?: string | null;
+}
+
+export interface PerfilCambios {
+  nombre?: string;
+  correo?: string;
+  fotoPerfil?: string;
 }
 
 interface AuthContextData {
@@ -17,7 +24,7 @@ interface AuthContextData {
   login: (correo: string, contrasena: string) => Promise<void>;
   register: (nombre: string, correo: string, contrasena: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (nombre: string) => Promise<void>;
+  updateProfile: (cambios: PerfilCambios) => Promise<void>;
   addPoints: (points: number) => Promise<void>;
 }
 
@@ -57,7 +64,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const mappedUser = {
         ...usuario,
-        puntosTotales: usuario.puntos_totales || 0
+        puntosTotales: usuario.puntos_totales || 0,
+        fotoPerfil: usuario.foto_perfil ?? null,
       };
 
       setToken(jwtToken);
@@ -81,7 +89,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const mappedUser = {
         ...usuario,
-        puntosTotales: usuario.puntos_totales || 0
+        puntosTotales: usuario.puntos_totales || 0,
+        fotoPerfil: usuario.foto_perfil ?? null,
       };
 
       setToken(jwtToken);
@@ -111,18 +120,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updateProfile = async (nombre: string) => {
+  const updateProfile = async (cambios: PerfilCambios) => {
     if (!user) return;
-    
+
     try {
-      const response = await api.patch(`/usuarios/${user.id}`, { nombre });
+      const response = await api.patch(`/usuarios/${user.id}`, cambios);
       const updatedUser = response.data.usuario;
-      
+
       const mappedUser = {
+        ...user,
         ...updatedUser,
-        puntosTotales: updatedUser.puntos_totales !== undefined ? updatedUser.puntos_totales : user.puntosTotales
+        puntosTotales: updatedUser.puntos_totales !== undefined ? updatedUser.puntos_totales : user.puntosTotales,
+        fotoPerfil: updatedUser.foto_perfil ?? user.fotoPerfil,
       };
-      
+
       setUser(mappedUser);
       await AsyncStorage.setItem('userData', JSON.stringify(mappedUser));
     } catch (error) {

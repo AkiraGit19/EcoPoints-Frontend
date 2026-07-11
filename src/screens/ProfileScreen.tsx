@@ -1,7 +1,8 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { User, LogOut, Award, Edit2, Target } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { User, LogOut, Award, Edit2, Target, Camera } from 'lucide-react-native';
 import { AuthContext } from '../context/AuthContext';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Input } from '../components/ui/Input';
@@ -14,6 +15,8 @@ import api from '../services/api';
 export const ProfileScreen = () => {
   const { user, logout, updateProfile, addPoints } = useContext(AuthContext);
   const [nombre, setNombre] = useState(user?.nombre || '');
+  const [correo, setCorreo] = useState(user?.correo || '');
+  const [fotoPerfil, setFotoPerfil] = useState<string | null>(user?.fotoPerfil || null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [displayPoints, setDisplayPoints] = useState(user?.puntosTotales || 0);
@@ -27,6 +30,7 @@ export const ProfileScreen = () => {
           const latestData = response.data;
           if (latestData && latestData.puntos_totales !== undefined) {
             setDisplayPoints(latestData.puntos_totales);
+            if (latestData.foto_perfil !== undefined) setFotoPerfil(latestData.foto_perfil);
             // Sync with context silently
             const diff = latestData.puntos_totales - user.puntosTotales;
             if (diff !== 0 && addPoints) {
@@ -41,18 +45,41 @@ export const ProfileScreen = () => {
     }, [user, addPoints])
   );
 
+  const seleccionarFoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso denegado', 'Necesitamos acceso a tus fotos para cambiar la imagen de perfil.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.4,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0]?.base64) {
+      setFotoPerfil(`data:image/jpeg;base64,${result.assets[0].base64}`);
+    }
+  };
+
   const handleUpdate = async () => {
     if (!nombre.trim()) {
       Alert.alert('Error', 'El nombre no puede estar vacío.');
       return;
     }
+    if (!correo.trim()) {
+      Alert.alert('Error', 'El correo no puede estar vacío.');
+      return;
+    }
     setIsSaving(true);
     try {
-      await updateProfile(nombre);
+      await updateProfile({ nombre: nombre.trim(), correo: correo.trim(), fotoPerfil: fotoPerfil ?? undefined });
       Alert.alert('Éxito', 'Perfil actualizado correctamente.');
       setIsEditing(false);
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo actualizar el perfil.');
+    } catch (error: any) {
+      const msg = error?.response?.data?.error || 'No se pudo actualizar el perfil.';
+      Alert.alert('Error', msg);
     } finally {
       setIsSaving(false);
     }
@@ -89,7 +116,11 @@ export const ProfileScreen = () => {
           
           <View style={styles.header}>
             <View style={styles.avatarContainer}>
-              <User size={48} color={colors.primary} />
+              {fotoPerfil ? (
+                <Image source={{ uri: fotoPerfil }} style={styles.avatarImage} />
+              ) : (
+                <User size={48} color={colors.primary} />
+              )}
             </View>
             <Text style={styles.name}>{user.nombre}</Text>
             <Text style={styles.email}>{user.correo}</Text>
@@ -111,6 +142,8 @@ export const ProfileScreen = () => {
                 onPress={() => {
                   setIsEditing(!isEditing);
                   setNombre(user.nombre);
+                  setCorreo(user.correo);
+                  setFotoPerfil(user.fotoPerfil || null);
                 }}
                 variant="outline"
               />
@@ -118,10 +151,21 @@ export const ProfileScreen = () => {
 
             {isEditing ? (
               <View style={styles.formContainer}>
+                <TouchableOpacity style={styles.changePhotoButton} onPress={seleccionarFoto}>
+                  <Camera size={18} color={colors.primary} />
+                  <Text style={styles.changePhotoText}>Cambiar foto de perfil</Text>
+                </TouchableOpacity>
                 <Input
                   label="Nombre"
                   value={nombre}
                   onChangeText={setNombre}
+                />
+                <Input
+                  label="Correo Electrónico"
+                  value={correo}
+                  onChangeText={setCorreo}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
                 />
                 <Button
                   title="Guardar Cambios"
@@ -196,6 +240,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 2,
     borderColor: colors.primary,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  changePhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+  },
+  changePhotoText: {
+    ...typography.button,
+    color: colors.primary,
+    fontSize: 14,
   },
   name: {
     ...typography.h2,
