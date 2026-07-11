@@ -1,28 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Leaf, Award, Calendar } from 'lucide-react-native';
-import { getRetos, unirseReto, Reto } from '../services/retoService';
+import { getRetos, unirseReto, getMisRetos, Reto, UsuarioReto } from '../services/retoService';
 import { GlassCard } from '../components/ui/GlassCard';
 import { typography } from '../theme/typography';
 import { colors } from '../theme/colors';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 export const RetosScreen = () => {
+  const navigation = useNavigation<any>();
   const [retos, setRetos] = useState<Reto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState<string | null>(null);
+  const [misRetos, setMisRetos] = useState<UsuarioReto[]>([]);
 
-  useEffect(() => {
-    cargarRetos();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarRetos();
+    }, [])
+  );
 
   const cargarRetos = async () => {
     try {
-      const data = await getRetos();
-      setRetos(data);
+      const dataRetos = await getRetos();
+      setRetos(dataRetos);
     } catch (error) {
       console.error('Error al cargar retos:', error);
-      Alert.alert('Error', 'No se pudieron cargar los retos.');
+      Alert.alert('Error', 'No se pudieron cargar los retos disponibles.');
+    }
+
+    try {
+      const dataMisRetos = await getMisRetos();
+      setMisRetos(dataMisRetos);
+    } catch (error) {
+      console.error('Error al cargar mis retos:', error);
     } finally {
       setIsLoading(false);
     }
@@ -33,7 +45,7 @@ export const RetosScreen = () => {
     try {
       const mensaje = await unirseReto(id);
       Alert.alert('¡Éxito!', mensaje);
-      
+      await cargarRetos();
     } catch (error) {
       Alert.alert('Error', 'No se pudo unir al reto.');
     } finally {
@@ -41,8 +53,16 @@ export const RetosScreen = () => {
     }
   };
 
+  const retoYaIniciado = (idReto: string) => {
+    return misRetos.some((item) => item.id_reto === idReto);
+  };
+
   const renderReto = ({ item }: { item: Reto }) => {
     const isThisJoining = isJoining === item.id;
+    const miReto = misRetos.find((r) => r.id_reto === item.id);
+    const iniciado = !!miReto;
+    const completado = miReto?.estado === 'COMPLETADO';
+
     return (
       <GlassCard style={styles.retoCard}>
         <View style={styles.retoHeader}>
@@ -63,17 +83,30 @@ export const RetosScreen = () => {
             </Text>
           </View>
           
-          <TouchableOpacity 
-            style={styles.joinButton}
-            onPress={() => handleUnirse(item.id)}
-            disabled={isThisJoining}
-          >
-            {isThisJoining ? (
-              <ActivityIndicator size="small" color={colors.background} />
-            ) : (
-              <Text style={styles.joinButtonText}>Unirse</Text>
-            )}
-          </TouchableOpacity>
+          {completado ? (
+            <View style={[styles.joinButton, { backgroundColor: colors.accent }]}>
+              <Text style={styles.joinButtonText}>¡Completado!</Text>
+            </View>
+          ) : iniciado ? (
+            <TouchableOpacity
+              style={styles.viewButton}
+              onPress={() => navigation.navigate('DetalleReto', { reto: item })}
+            >
+              <Text style={styles.joinButtonText}>Ver reto</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.joinButton}
+              onPress={() => handleUnirse(item.id)}
+              disabled={isThisJoining}
+            >
+              {isThisJoining ? (
+                <ActivityIndicator size="small" color={colors.background} />
+              ) : (
+                <Text style={styles.joinButtonText}>Unirse</Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </GlassCard>
     );
@@ -154,7 +187,7 @@ const styles = StyleSheet.create({
   puntosBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(163, 230, 53, 0.2)', 
+    backgroundColor: 'rgba(163, 230, 53, 0.2)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -187,6 +220,12 @@ const styles = StyleSheet.create({
   },
   joinButton: {
     backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  viewButton: {
+    backgroundColor: '#2563eb',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,

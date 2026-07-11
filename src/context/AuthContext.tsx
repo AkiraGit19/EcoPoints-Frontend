@@ -18,6 +18,7 @@ interface AuthContextData {
   register: (nombre: string, correo: string, contrasena: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (nombre: string) => Promise<void>;
+  addPoints: (points: number) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -130,8 +131,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addPoints = async (points: number) => {
+    if (!user) return;
+    const mappedUser = {
+      ...user,
+      puntosTotales: user.puntosTotales + points
+    };
+    setUser(mappedUser);
+    await AsyncStorage.setItem('userData', JSON.stringify(mappedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateProfile, addPoints }}>
       {children}
     </AuthContext.Provider>
   );
