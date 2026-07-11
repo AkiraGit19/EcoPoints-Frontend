@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Leaf, Award, Calendar } from 'lucide-react-native';
+import { Award, Calendar, Bell } from 'lucide-react-native';
 import { getRetos, unirseReto, getMisRetos, Reto, UsuarioReto } from '../services/retoService';
+import { getNotificaciones } from '../services/notificacionService';
 import { GlassCard } from '../components/ui/GlassCard';
 import { typography } from '../theme/typography';
 import { colors } from '../theme/colors';
@@ -14,10 +15,14 @@ export const RetosScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState<string | null>(null);
   const [misRetos, setMisRetos] = useState<UsuarioReto[]>([]);
+  const [noLeidas, setNoLeidas] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       cargarRetos();
+      getNotificaciones()
+        .then((n) => setNoLeidas(n.filter((x) => !x.leida).length))
+        .catch(() => {});
     }, [])
   );
 
@@ -118,8 +123,20 @@ export const RetosScreen = () => {
       style={styles.container}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Retos Disponibles</Text>
-        <Text style={styles.headerSubtitle}>Únete y gana EcoPoints</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.headerTitle}>Retos Disponibles</Text>
+            <Text style={styles.headerSubtitle}>Únete y gana EcoPoints</Text>
+          </View>
+          <TouchableOpacity style={styles.bellButton} onPress={() => navigation.navigate('Notificaciones')}>
+            <Bell size={24} color={colors.text} />
+            {noLeidas > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{noLeidas > 9 ? '9+' : noLeidas}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {isLoading ? (
@@ -150,6 +167,34 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 24,
     paddingBottom: 24,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
+  bellButton: {
+    padding: 8,
+  },
+  badge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.error,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   headerTitle: {
     ...typography.h1,

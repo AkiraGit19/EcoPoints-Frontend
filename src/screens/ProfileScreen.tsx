@@ -1,8 +1,8 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView, Image, TouchableOpacity, Share } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import { User, LogOut, Award, Edit2, Target, Camera } from 'lucide-react-native';
+import { User, Award, Camera, CheckCircle2, Activity, Share2 } from 'lucide-react-native';
 import { AuthContext } from '../context/AuthContext';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Input } from '../components/ui/Input';
@@ -11,6 +11,7 @@ import { typography } from '../theme/typography';
 import { colors } from '../theme/colors';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
+import { getProgreso, Progreso } from '../services/retoService';
 
 export const ProfileScreen = () => {
   const { user, logout, updateProfile, addPoints } = useContext(AuthContext);
@@ -20,6 +21,7 @@ export const ProfileScreen = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [displayPoints, setDisplayPoints] = useState(user?.puntosTotales || 0);
+  const [progreso, setProgreso] = useState<Progreso | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -40,10 +42,27 @@ export const ProfileScreen = () => {
         } catch (error) {
           console.error('Error fetching latest profile:', error);
         }
+        try {
+          setProgreso(await getProgreso());
+        } catch (error) {
+          console.error('Error fetching progreso:', error);
+        }
       };
       fetchLatestProfile();
     }, [user, addPoints])
   );
+
+  // US-0005-0001: compartir logros en redes con el share nativo.
+  const compartirLogros = async () => {
+    const completados = progreso?.totalCompletados || 0;
+    try {
+      await Share.share({
+        message: `En EcoPoints ya completé ${completados} reto(s) ecológico(s) y acumulé ${displayPoints} EcoPoints. ¡Súmate a cuidar el planeta! 🌱`,
+      });
+    } catch (error) {
+      // el usuario canceló, no hacemos nada
+    }
+  };
 
   const seleccionarFoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -188,18 +207,51 @@ export const ProfileScreen = () => {
             )}
           </GlassCard>
 
-          {}
+          {/* US-0004-0001: progreso y estadísticas */}
           <GlassCard style={styles.impactCard}>
-            <Text style={styles.sectionTitle}>Tu Impacto</Text>
-            <View style={styles.impactRow}>
-              <View style={styles.impactIconContainer}>
-                <Target size={24} color={colors.primary} />
+            <Text style={styles.sectionTitle}>Tu Progreso</Text>
+            <View style={styles.progresoRow}>
+              <View style={styles.progresoTile}>
+                <CheckCircle2 size={24} color={colors.primary} />
+                <Text style={styles.progresoValue}>{progreso?.totalCompletados ?? 0}</Text>
+                <Text style={styles.progresoLabel}>Completados</Text>
               </View>
-              <View style={styles.impactTextContainer}>
-                <Text style={styles.impactTitle}>Desafíos completados</Text>
-                <Text style={styles.impactSubtitle}>0 desafíos (próximamente)</Text>
+              <View style={styles.progresoTile}>
+                <Activity size={24} color={colors.accent} />
+                <Text style={styles.progresoValue}>{progreso?.totalEnProgreso ?? 0}</Text>
+                <Text style={styles.progresoLabel}>En progreso</Text>
               </View>
             </View>
+
+            {!!progreso?.enProgreso?.length && (
+              <View style={styles.progresoList}>
+                <Text style={styles.progresoListTitle}>Retos en progreso</Text>
+                {progreso.enProgreso.map((r, i) => (
+                  <View key={`p${i}`} style={styles.progresoItem}>
+                    <Activity size={14} color={colors.accent} />
+                    <Text style={styles.progresoItemText}>{r.titulo}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {!!progreso?.completados?.length && (
+              <View style={styles.progresoList}>
+                <Text style={styles.progresoListTitle}>Retos completados</Text>
+                {progreso.completados.map((r, i) => (
+                  <View key={`c${i}`} style={styles.progresoItem}>
+                    <CheckCircle2 size={14} color={colors.primary} />
+                    <Text style={styles.progresoItemText}>{r.titulo}</Text>
+                    <Text style={styles.progresoItemPts}>+{r.puntos}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <TouchableOpacity style={styles.shareButton} onPress={compartirLogros}>
+              <Share2 size={18} color={colors.background} />
+              <Text style={styles.shareButtonText}>Compartir mis logros</Text>
+            </TouchableOpacity>
           </GlassCard>
 
           <Button
@@ -294,35 +346,65 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     padding: 20,
   },
-  impactRow: {
+  progresoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: 12,
     marginTop: 16,
+  },
+  progresoTile: {
+    flex: 1,
+    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.03)',
-    padding: 16,
+    paddingVertical: 20,
     borderRadius: 12,
   },
-  impactIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  impactTextContainer: {
-    flex: 1,
-  },
-  impactTitle: {
-    ...typography.h3,
+  progresoValue: {
+    ...typography.h2,
     color: colors.text,
-    fontSize: 16,
+    marginTop: 8,
   },
-  impactSubtitle: {
+  progresoLabel: {
     ...typography.bodySmall,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  progresoList: {
+    marginTop: 20,
+  },
+  progresoListTitle: {
+    ...typography.bodySmall,
+    color: colors.textMuted,
+    marginBottom: 10,
+  },
+  progresoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  progresoItemText: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
+  },
+  progresoItemPts: {
+    ...typography.bodySmall,
+    color: colors.accent,
+    fontWeight: 'bold',
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginTop: 24,
+  },
+  shareButtonText: {
+    ...typography.button,
+    color: colors.background,
   },
   editCard: {
     marginBottom: 24,

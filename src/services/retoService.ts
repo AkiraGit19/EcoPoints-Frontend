@@ -28,3 +28,23 @@ export const getMisRetos = async (): Promise<UsuarioReto[]> => {
   const response = await api.get('/retos/mis-retos');
   return response.data;
 };
+
+export interface RetoResumen {
+  titulo: string;
+  descripcion: string;
+  puntos: number;
+  fecha: string;
+}
+
+export interface Progreso {
+  totalCompletados: number;
+  totalEnProgreso: number;
+  puntosGanados: number;
+  completados: RetoResumen[];
+  enProgreso: RetoResumen[];
+}
+
+export const getProgreso = async (): Promise<Progreso> => {
+  const response = await api.get('/retos/mi-progreso');
+  return response.data;
+};

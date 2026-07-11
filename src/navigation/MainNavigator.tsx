@@ -8,6 +8,7 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import DetalleRetoScreen from '../screens/DetalleRetoScreen';
 import { RecompensasScreen } from '../screens/RecompensasScreen';
 import { MapaScreen } from '../screens/MapaScreen';
+import { NotificacionesScreen } from '../screens/NotificacionesScreen';
 
 import { colors } from '../theme/colors';
 import { Leaf, User, Gift, MapPin } from 'lucide-react-native';
@@ -32,6 +33,16 @@ const RetosStack = () => {
           headerStyle: {
             backgroundColor: '#0a1612',
           },
+          headerTintColor: '#ffffff',
+        }}
+      />
+
+      <Stack.Screen
+        name="Notificaciones"
+        component={NotificacionesScreen}
+        options={{
+          title: 'Notificaciones',
+          headerStyle: { backgroundColor: '#0a1612' },
           headerTintColor: '#ffffff',
         }}
       />
