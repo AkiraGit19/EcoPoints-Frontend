@@ -6,9 +6,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RetosScreen } from '../screens/RetosScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import DetalleRetoScreen from '../screens/DetalleRetoScreen';
+import { RecompensasScreen } from '../screens/RecompensasScreen';
 
 import { colors } from '../theme/colors';
-import { Leaf, User } from 'lucide-react-native';
+import { Leaf, User, Gift } from 'lucide-react-native';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -57,6 +58,14 @@ export const MainNavigator = () => {
         component={RetosStack}
         options={{
           tabBarIcon: ({ color, size }) => <Leaf color={color} size={size} />,
+        }}
+      />
+
+      <Tab.Screen
+        name="Recompensas"
+        component={RecompensasScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <Gift color={color} size={size} />,
         }}
       />
 
