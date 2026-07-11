@@ -7,9 +7,10 @@ import { RetosScreen } from '../screens/RetosScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import DetalleRetoScreen from '../screens/DetalleRetoScreen';
 import { RecompensasScreen } from '../screens/RecompensasScreen';
+import { MapaScreen } from '../screens/MapaScreen';
 
 import { colors } from '../theme/colors';
-import { Leaf, User, Gift } from 'lucide-react-native';
+import { Leaf, User, Gift, MapPin } from 'lucide-react-native';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -58,6 +59,14 @@ export const MainNavigator = () => {
         component={RetosStack}
         options={{
           tabBarIcon: ({ color, size }) => <Leaf color={color} size={size} />,
+        }}
+      />
+
+      <Tab.Screen
+        name="Mapa"
+        component={MapaScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <MapPin color={color} size={size} />,
         }}
       />
 

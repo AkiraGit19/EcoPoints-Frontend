@@ -25,6 +25,14 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "EcoPoints usa tu ubicación para mostrar los centros de reciclaje cercanos en el mapa."
+        }
+      ]
+    ]
   }
 }
