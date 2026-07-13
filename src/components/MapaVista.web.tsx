@@ -1,65 +1,92 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MapPin, Clock, Info } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapPin, Clock, X } from 'lucide-react-native';
 import { Centro } from '../services/centroService';
-import { GlassCard } from './ui/GlassCard';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-// El mapa nativo no corre en web; mostramos los centros como lista con su info.
-// ponytail: fallback web. El mapa real (marcadores/GPS) va en MapaVista.native.
+const icono = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
 export const MapaVista = ({ centros }: { centros: Centro[] }) => {
+  const [seleccionado, setSeleccionado] = useState<Centro | null>(null);
+
   return (
-    <LinearGradient colors={[colors.background, '#0f2b20']} style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Centros de Reciclaje</Text>
-        <View style={styles.note}>
-          <Info size={14} color={colors.textMuted} />
-          <Text style={styles.noteText}>Abre la app en tu móvil para ver el mapa interactivo.</Text>
+    <View style={styles.container}>
+      <MapContainer center={[-12.11, -77.02] as [number, number]} zoom={12} style={{ height: '100%', width: '100%' }}>
+        <TileLayer
+          attribution='&copy; OpenStreetMap contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {centros.map((c) => (
+          <Marker
+            key={c.id}
+            position={[Number(c.latitud), Number(c.longitud)] as [number, number]}
+            icon={icono}
+            eventHandlers={{ click: () => setSeleccionado(c) }}
+          >
+            <Popup>{c.nombre}</Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+
+      {seleccionado && (
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.close} onPress={() => setSeleccionado(null)}>
+            <X size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+          <Text style={styles.nombre}>{seleccionado.nombre}</Text>
+          <View style={styles.row}>
+            <MapPin size={16} color={colors.primary} />
+            <Text style={styles.rowText}>{seleccionado.direccion}</Text>
+          </View>
+          <View style={styles.row}>
+            <Clock size={16} color={colors.primary} />
+            <Text style={styles.rowText}>{seleccionado.horario_atencion}</Text>
+          </View>
+          <View style={styles.chips}>
+            {(seleccionado.materiales_aceptados || []).map((m) => (
+              <View key={m} style={styles.chip}>
+                <Text style={styles.chipText}>{m}</Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
-      <FlatList
-        data={centros}
-        keyExtractor={(c) => c.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <GlassCard style={styles.card}>
-            <Text style={styles.nombre}>{item.nombre}</Text>
-            <View style={styles.row}>
-              <MapPin size={16} color={colors.primary} />
-              <Text style={styles.rowText}>{item.direccion}</Text>
-            </View>
-            <View style={styles.row}>
-              <Clock size={16} color={colors.primary} />
-              <Text style={styles.rowText}>{item.horario_atencion}</Text>
-            </View>
-            <View style={styles.chips}>
-              {(item.materiales_aceptados || []).map((m) => (
-                <View key={m} style={styles.chip}><Text style={styles.chipText}>{m}</Text></View>
-              ))}
-            </View>
-          </GlassCard>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>No hay centros registrados.</Text>}
-      />
-    </LinearGradient>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 16 },
-  title: { ...typography.h1, color: colors.primary },
-  note: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-  noteText: { ...typography.bodySmall, color: colors.textMuted },
-  list: { padding: 24, paddingTop: 8 },
-  card: { marginBottom: 16 },
-  nombre: { ...typography.h3, color: colors.text, marginBottom: 12 },
+  container: { flex: 1, backgroundColor: colors.background },
+  card: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 32,
+    backgroundColor: '#0f2b20',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  close: { position: 'absolute', top: 14, right: 14, zIndex: 2 },
+  nombre: { ...typography.h3, color: colors.text, marginBottom: 12, marginRight: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   rowText: { ...typography.body, color: colors.textMuted, flex: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  chip: { backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14 },
+  chip: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
   chipText: { ...typography.bodySmall, color: colors.primary },
-  empty: { ...typography.body, color: colors.textMuted, textAlign: 'center', marginTop: 40 },
 });
