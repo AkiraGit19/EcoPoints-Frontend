@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../services/api';
+import api, { setUnauthorizedHandler } from '../services/api';
 
 export interface User {
   id: string;
@@ -54,6 +54,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadStorageData();
+
+    // Si el backend responde 401 (token vencido), volvemos a login limpio.
+    setUnauthorizedHandler(() => {
+      setToken(null);
+      setUser(null);
+    });
   }, []);
 
   const login = async (correo: string, contrasena: string) => {

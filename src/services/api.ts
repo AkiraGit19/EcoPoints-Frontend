@@ -25,4 +25,21 @@ api.interceptors.request.use(
   }
 );
 
+// Token vencido/inválido: limpia la sesión y avisa a AuthContext para volver a login.
+let onUnauthorized: (() => void) | null = null;
+export const setUnauthorizedHandler = (fn: () => void) => {
+  onUnauthorized = fn;
+};
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error?.response?.status === 401) {
+      await AsyncStorage.multiRemove(['userToken', 'userData']);
+      onUnauthorized?.();
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

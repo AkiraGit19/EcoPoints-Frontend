@@ -51,8 +51,11 @@ export const RetosScreen = () => {
       const mensaje = await unirseReto(id);
       Alert.alert('¡Éxito!', mensaje);
       await cargarRetos();
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo unir al reto.');
+    } catch (error: any) {
+      const msg = error?.response?.status === 401
+        ? 'Tu sesión expiró. Cierra sesión y vuelve a iniciar sesión.'
+        : error?.response?.data?.error || 'No se pudo unir al reto.';
+      Alert.alert('Error', msg);
     } finally {
       setIsJoining(null);
     }
